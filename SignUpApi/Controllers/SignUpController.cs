@@ -22,8 +22,8 @@ namespace SignUpApi.Controllers
     public class SignUpController : ControllerBase
     {
         private ISignUpService _signUpService;
-        private JwtUtils _jwtUtils;
-        public SignUpController(ISignUpService signUpService, JwtUtils jwtUtils)
+        private IJwtUtils _jwtUtils;
+        public SignUpController(ISignUpService signUpService, IJwtUtils jwtUtils)
         {
             _signUpService = signUpService;
             _jwtUtils = jwtUtils;
