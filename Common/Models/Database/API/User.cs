@@ -17,7 +17,7 @@ namespace Common.Models.Database.API
         public Role Role { get; set; }
         public string AadObjectId { get; set; }
         public string Department { get; set; }
-
+        public string UserId { get; set; }
 
         [JsonIgnore]
         public string PasswordHash { get; set; }

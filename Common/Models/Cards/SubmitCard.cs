@@ -16,49 +16,51 @@ namespace Assessment.Common.Models.Cards
         public static Attachment createCard(User user)
         {
             AdaptiveCard card = new AdaptiveCard(new AdaptiveSchemaVersion("1.1"));
-            List<AdaptiveColumn> cols = new List<AdaptiveColumn>();
-            var col2 = new AdaptiveColumn();
-            col2.Type = "Column";
-            col2.Spacing = AdaptiveSpacing.Medium;
-            col2.Width = AdaptiveColumnWidth.Auto;
+            List<AdaptiveColumn> TextColumns = new List<AdaptiveColumn>();
+            var NameColumn = new AdaptiveColumn();
+            NameColumn.Type = "Column";
+            NameColumn.Spacing = AdaptiveSpacing.Medium;
+            NameColumn.Width = AdaptiveColumnWidth.Auto;
             Random rand = new Random();
-            col2.Items.Add(new AdaptiveImage()
+            NameColumn.Items.Add(new AdaptiveImage()
             {
                 Url = new Uri("https://picsum.photos/100/100?image=" + rand.Next(1, 1000)),
-                Size = AdaptiveImageSize.Medium,
+                Size = AdaptiveImageSize.Large,
                 Style = AdaptiveImageStyle.Person,
                 //Spacing = AdaptiveSpacing.Padding
 
 
             });
-            var col = new AdaptiveColumn();
-            col.Type = "Column";
-            col.Width = AdaptiveColumnWidth.Auto;
-            col.Items.Add(new AdaptiveTextBlock()
+            var TitleColumn = new AdaptiveColumn();
+            TitleColumn.Type = "Column";
+            TitleColumn.Width = AdaptiveColumnWidth.Auto;
+            TitleColumn.Items.Add(new AdaptiveTextBlock()
             {
                 Weight = AdaptiveTextWeight.Bolder,
-                Text = "test",
+                Text = "Hi "+user.FirstName + " " + user.LastName,
                 //Wrap= true
             });
-            col.Items.Add(new AdaptiveTextBlock()
+            TitleColumn.Items.Add(new AdaptiveTextBlock()
             {
                 IsSubtle = true,
-                Text = "test",
+                Text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
                 Weight = AdaptiveTextWeight.Lighter,
                 Spacing = AdaptiveSpacing.None,
-                //Wrap = true
+                Wrap = true
             });
 
-            cols.Add(col2);
-            cols.Add(col);
+            TextColumns.Add(NameColumn);
+            TextColumns.Add(TitleColumn);
+            List<AdaptiveColumn> InputColumns = new List<AdaptiveColumn>();
             var mailFieldCol = new AdaptiveColumn();
             mailFieldCol.Type = "Column";
             mailFieldCol.Width = AdaptiveColumnWidth.Auto;
             mailFieldCol.Items.Add(new AdaptiveTextInput()
             {
                 Id = "email",
-                Label = "enter email",
+                //Label = "enter email",
                 Type = "Input.Text",
+                Placeholder = "Alternative email address",
                 Style = AdaptiveTextInputStyle.Text
             });
             var deptFieldCol = new AdaptiveColumn();
@@ -67,18 +69,25 @@ namespace Assessment.Common.Models.Cards
             deptFieldCol.Items.Add(new AdaptiveTextInput()
             {
                 Id = "dept",
-                Label = "enter dept",
+                //Label = "enter dept",
+                Placeholder = "Department",
                 Type = "Input.Text",
                 Style = AdaptiveTextInputStyle.Text
             });
-            cols.Add(mailFieldCol);
-            cols.Add(deptFieldCol);
+            InputColumns.Add(mailFieldCol);
+            InputColumns.Add(deptFieldCol);
 
             card.Body.Add(new AdaptiveColumnSet()
             {
                 Spacing = AdaptiveSpacing.Medium,
 
-                Columns = cols
+                Columns = TextColumns
+            });
+            card.Body.Add(new AdaptiveColumnSet()
+            {
+                Spacing = AdaptiveSpacing.Medium,
+
+                Columns = InputColumns
             });
 
             card.Actions = new List<AdaptiveAction>()
@@ -86,9 +95,10 @@ namespace Assessment.Common.Models.Cards
             new AdaptiveSubmitAction()
             {
                 Type = "Action.Submit",
-                Title = "Erstellen",
+                Title = "Submit",
                 Data = new DataToSend
                 {
+                    dept = "dept",
                     email = "email"
                 }
             }
@@ -102,47 +112,7 @@ namespace Assessment.Common.Models.Cards
             return adaptiveCardAttachment;
         }
 
-        public AdaptiveColumn GetImageCol()
-        {
-            var col2 = new AdaptiveColumn();
-            col2.Type = "Column";
-            col2.Spacing = AdaptiveSpacing.Medium;
-            col2.Width = AdaptiveColumnWidth.Auto;
-            Random rand = new Random();
-
-            col2.Items.Add(new AdaptiveImage()
-            {
-                Url = new Uri("https://picsum.photos/100/100?image=" + rand.Next(1, 1000)),
-                Size = AdaptiveImageSize.Medium,
-                Style = AdaptiveImageStyle.Person,
-                //Spacing = AdaptiveSpacing.Padding
-
-
-            });
-            return col2;
-        }
-
-        private AdaptiveColumn GetNameCol(User user)
-        {
-            var col = new AdaptiveColumn();
-            col.Type = "Column";
-            col.Width = AdaptiveColumnWidth.Auto;
-            col.Items.Add(new AdaptiveTextBlock()
-            {
-                Weight = AdaptiveTextWeight.Bolder,
-                //Text = user.Title + " " + user.FirstName + " " + user.LastName,
-                //Wrap= true
-            });
-            col.Items.Add(new AdaptiveTextBlock()
-            {
-                IsSubtle = true,
-                Text = user.Email,
-                Weight = AdaptiveTextWeight.Lighter,
-                Spacing = AdaptiveSpacing.None,
-                //Wrap = true
-            });
-            return col;
-        }
+        
 
         private static Attachment CreateAdaptiveCardAttachment(string adaptiveCardJson)
         {
@@ -156,10 +126,6 @@ namespace Assessment.Common.Models.Cards
         }
     }
 
-    public class DataToSend
-    {
-        public string email { get; set; }
-        public string dept { get; set; }
-    }
+    
     
 }

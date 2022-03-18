@@ -1,5 +1,6 @@
 ﻿using Assessment.Common.Helpers;
 using Assessment.Common.Models.Cards;
+using Common.Authorization;
 using Common.Helpers.Bot;
 using Common.Helpers.Services;
 using Common.Models.Database.API;
@@ -12,7 +13,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,15 +32,15 @@ namespace SignUpApi.Controllers
         private readonly ISignUpService _signupService;
         private string _activityId;
         private readonly ILogger<NotifyController> _logger;
-        private readonly GraphServiceClient _graphServiceClient;
+        private IJwtUtils _jwtUtils;
 
 
         public NotifyController(IConversationReferencesHelper conversationReferencesHelper,
             IBotFrameworkHttpAdapter adapter,
             IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences,
             ISignUpService signupService,
-            GraphServiceClient graphServiceClient,
-            ILogger<NotifyController> logger
+            ILogger<NotifyController> logger,
+             IJwtUtils jwtUtils
             )
         {
             _adapter = adapter;
@@ -46,111 +49,118 @@ namespace SignUpApi.Controllers
             _appId = configuration["MicrosoftAppId"] ?? string.Empty;
             _signupService = signupService;
             _logger = logger;
-            _graphServiceClient = graphServiceClient;
+            _jwtUtils =  jwtUtils;
 
         }
 
 
-        [HttpGet("api/notify")]
-        public async Task<IActionResult> Get()
+        [Authorize]
+        [HttpPost("api/signup/card")]
+        public async Task<IActionResult> PostCardToUser([FromHeader] string authorization)
         {
+            var UserInfo = new TokenUser();
+            if (AuthenticationHeaderValue.TryParse(authorization, out var headerValue))
+            {
+                // we have a valid AuthenticationHeaderValue that has the following details:
+
+                var scheme = headerValue.Scheme;
+                var parameter = headerValue.Parameter;
+                UserInfo = _jwtUtils.ValidateJwtToken(parameter);
+                // scheme will be "Bearer"
+                // parmameter will be the token itself.
+            }
 
             if (_conversationReferences.Count == 0)
             {
                 _conversationReferences = new ConcurrentDictionary<string, ConversationReference>();
                 _conversationReferences = getConversationDectionary();
             }
-
-            foreach (var conversationReference in _conversationReferences.Values)
+            var conversationList = _conversationReferences.Values;
+            var conversation = conversationList.FirstOrDefault(c => c.Conversation.AadObjectId == UserInfo.AadObjectId);
+            if(conversation == null)
             {
-                //var conversationNotification = notifications.Where(n => n.UserId == conversationReference.User.Id && n.IsSent == false).ToList();
-                //foreach (var notification in conversationNotification)
-                //{
-                //    IMessageActivity message = MessageFactory.Text(notification.Body);
-                //    await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference,
-                //       async (context, token) => await BotCallback(message, context, token),
-                //       default(CancellationToken));
-                //}
-
-
+                conversation = conversationList.FirstOrDefault();
+                conversation.Conversation.AadObjectId = _signupService.GetReferenceEntity(conversation.Conversation.Id).AadObjectId;
             }
+            var user = _signupService.GetById(UserInfo.userId);
+            var card = SubmitCard.createCard(user);
+            IMessageActivity message = MessageFactory.Attachment(card);
+            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversation,
+               async (context, token) => await BotCallback(message, context, token),
+               default(CancellationToken));
+            #region comments
+            //foreach (var conversationReference in _conversationReferences.Values)
+            //{
+            //    if(conversationReference.Conversation.AadObjectId == null)
+            //    {
+            //        conversationReference.Conversation.AadObjectId = _signupService.GetReferenceEntity(conversationReference.Conversation.Id).AadObjectId;
+            //    }
+            //    if(conversationReference.Conversation.AadObjectId == UserInfo.AadObjectId)
+            //    {
+            //        var user = _signupService.GetById(UserInfo.userId);
+            //        var card = SubmitCard.createCard(user);
+            //        IMessageActivity message = MessageFactory.Attachment(card);
+            //        await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference,
+            //           async (context, token) => await BotCallback(message, context, token),
+            //           default(CancellationToken));
+            //        conversationFound = true;
+            //    }
 
-            // Let the caller know proactive messages have been sent
-            return new ContentResult()
-            {
-                Content = "<html><body><h1>Proactive messages have been sent.</h1></body></html>",
-                ContentType = "text/html",
-                StatusCode = (int)HttpStatusCode.OK,
-            };
-        }
 
-        [HttpPost("api/signup/{userid}")]
-        public async Task<IActionResult> PostUser([FromRoute] string userId)
-        {
-            
-             if (_conversationReferences.Count == 0)
-            {
-                _conversationReferences = new ConcurrentDictionary<string, ConversationReference>();
-                _conversationReferences = getConversationDectionary();
-            }
-            foreach (var conversationReference in _conversationReferences.Values)
-            {
-                if(conversationReference.User.Id == userId)
-                {
-                    var user = new Common.Models.Database.API.User();
-                    var card = SubmitCard.createCard(user);
-                    IMessageActivity message = MessageFactory.Attachment(card);
-                    await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference,
-                       async (context, token) => await BotCallback(message, context, token),
-                       default(CancellationToken));
-                }
-                
+            //}
+            #endregion
 
-            }
+            if (conversation == null)
+                throw new AppException("Conversation not found");
             return Ok("sent to user");
                
 
         }
 
+        #region graphCode
+
         [HttpGet("api/user")]
         public async Task<IActionResult> GetUser()
         {
 
-            var user = _graphServiceClient.Users.Request().GetAsync().Result;
+            //var user = _graphServiceClient.Users.Request().GetAsync().Result;
 
-            var me = _graphServiceClient.Me.Request().GetAsync().Result;
+            //var me = _graphServiceClient.Me.Request().GetAsync().Result;
 
-            // var photo = await _graphApiClientDirect.GetGraphApiProfilePhoto();
-            // var file = await _graphApiClientDirect.GetSharepointFile();
-            return Ok(user);
+            //// var photo = await _graphApiClientDirect.GetGraphApiProfilePhoto();
+            //// var file = await _graphApiClientDirect.GetSharepointFile();
+            return Ok();
 
 
         }
 
         [HttpGet("api/postuser")]
-        public async Task<IActionResult> PostUser()
+        public async Task<IActionResult> PosstUser()
         {
 
-            var user = new Microsoft.Graph.User
-            {
-                AccountEnabled = true,
-                DisplayName = "Aya Mansour",
-                MailNickname = "AyaM",
-                UserPrincipalName = "Aya@rami13195gmail.onmicrosoft.com",
-                PasswordProfile = new PasswordProfile
-                {
-                    ForceChangePasswordNextSignIn = false,
-                    Password = "Rami@603"
-                }
-            };
+            //var user = new Microsoft.Graph.User
+            //{
+            //    AccountEnabled = true,
+            //    DisplayName = "Aya Mansour",
+            //    MailNickname = "AyaM",
+            //    UserPrincipalName = "Aya@rami13195gmail.onmicrosoft.com",
+            //    PasswordProfile = new PasswordProfile
+            //    {
+            //        ForceChangePasswordNextSignIn = false,
+            //        Password = "Rami@603"
+            //    }
+            //};
 
-            var userr = await _graphServiceClient.Users
-                .Request()
-                .AddAsync(user);
-            return Ok(userr);
+            //var userr = await _graphServiceClient.Users
+            //    .Request()
+            //    .AddAsync(user);
+            return Ok();
+
 
 
         }
+        #endregion
+
 
 
         private async Task BotCallback(IMessageActivity message, ITurnContext turnContext, CancellationToken cancellationToken)
@@ -173,6 +183,7 @@ namespace SignUpApi.Controllers
                 ChannelAccount bot = new ChannelAccount();
                 ChannelAccount user = new ChannelAccount();
                 ConversationAccount ca = new ConversationAccount();
+                ca.AadObjectId = item.AadObjectId;
                 user.Id = item.UserId;
                 bot.Id = item.BotId;
                 cr.Bot = bot;

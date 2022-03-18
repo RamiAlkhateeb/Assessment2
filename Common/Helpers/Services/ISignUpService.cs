@@ -1,7 +1,9 @@
-﻿using Assessment.Common.Models.Request;
+﻿using Assessment.Common.Models.Database;
+using Assessment.Common.Models.Request;
 using Assessment.Common.Models.Response;
 using Common.Models.Database;
 using Common.Models.Database.API;
+using Microsoft.Bot.Schema.Teams;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +21,11 @@ namespace Common.Helpers.Services
         User GetById(int id);
         AuthenticateResponse Login(LoginRequest user);
         void CreateUser(SignUpRequest model);
-
+        ConversationReferenceEntity GetReferenceEntity(string id);
+        Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData);
+        MailLog SaveMailLog(MailLog mailLog);
+        IEnumerable<MailLog> GetMailLogs();
+        User GetUserByAadObjectId(string id);
 
     }
 }

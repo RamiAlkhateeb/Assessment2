@@ -1,4 +1,8 @@
-﻿using Assessment.Common.Models.Request;
+﻿using Assessment.Common.Helpers;
+using Assessment.Common.Helpers.Services;
+using Assessment.Common.Models;
+using Assessment.Common.Models.Database;
+using Assessment.Common.Models.Request;
 using Common.Authorization;
 using Common.Helpers.Services;
 using Common.Models.Database.API;
@@ -24,12 +28,40 @@ namespace SignUpApi.Controllers
 
 
         [Authorize(Role.Admin)]
-        [EnableQuery]
-        [HttpGet("all")]
-        public IActionResult GetAll()
+        //[EnableQuery]
+        [HttpPost]
+        [Route("sendmail")]
+        public IActionResult SendEmail([FromBody] MailRequest mail)
         {
+            MailValidator mailValidator = new MailValidator();
+            EmailSenderService emailSenderService = new EmailSenderService();
+            var dataToSend = new DataToSend();
+            dataToSend.email = mail.Email;
+            dataToSend.dept = mail.Department;
             //return Ok(_userService.GetAll().AsQueryable());
-            return Ok();
+            if (mailValidator.IsMailValid(mail.Email))
+            {
+                emailSenderService.SendEmail(dataToSend , "");
+                var mailData = new MailLog();
+                mailData.AlternativeEmail = mail.Email;
+                mailData.Department = mail.Department;
+                mailData.SentAt = DateTime.Now;
+               // mailData.UserId = turnContext.Activity.Conversation.AadObjectId;
+                _signUpService.SaveMailLog(mailData);
+
+            }
+            else
+                throw new AppException("Mail Not Valid");
+            return Ok("Email is sent");
+        }
+
+        [Authorize(Role.Admin)]
+        //[EnableQuery]
+        [HttpGet]
+        [Route("getdetails")]
+        public IActionResult GetUserDetails()
+        {
+            return Ok(_signUpService.GetMailLogs());
         }
 
         [HttpPost]

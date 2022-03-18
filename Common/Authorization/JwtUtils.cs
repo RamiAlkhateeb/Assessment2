@@ -15,7 +15,7 @@ namespace Common.Authorization
     public interface IJwtUtils
     {
         public string GenerateJwtToken(User user);
-        public int? ValidateJwtToken(string token);
+        public TokenUser? ValidateJwtToken(string token);
     }
 
     public class JwtUtils : IJwtUtils
@@ -35,7 +35,7 @@ namespace Common.Authorization
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("id", user.Id.ToString()) , 
-                    new Claim("role", user.Role.ToString() )}),
+                    new Claim("role", user.Role.ToString() ) , new Claim("AadObjectId" , user.AadObjectId) }),
                 Expires = DateTime.UtcNow.AddDays(7),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
@@ -43,7 +43,7 @@ namespace Common.Authorization
             return tokenHandler.WriteToken(token);
         }
 
-        public int? ValidateJwtToken(string token)
+        public TokenUser? ValidateJwtToken(string token)
         {
             if (token == null)
                 return null;
@@ -63,10 +63,12 @@ namespace Common.Authorization
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                var userId = int.Parse(jwtToken.Claims.First(x => x.Type == "id").Value);
-
+                var tokenUser = new TokenUser();
+                tokenUser.userId = int.Parse(jwtToken.Claims.First(x => x.Type == "id").Value);
+                tokenUser.AadObjectId = jwtToken.Claims.First(x => x.Type == "AadObjectId").Value;
+                tokenUser.Role = (Role)Enum.Parse(typeof(Role), jwtToken.Claims.First(x => x.Type == "role").Value);
                 // return user id from JWT token if validation successful
-                return userId;
+                return tokenUser;
             }
             catch
             {
@@ -74,5 +76,12 @@ namespace Common.Authorization
                 return null;
             }
         }
+    }
+
+    public class TokenUser
+    {
+        public int userId { get; set; }
+        public string AadObjectId { get; set; }
+        public Role Role { get; set; }
     }
 }

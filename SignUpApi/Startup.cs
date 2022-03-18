@@ -137,7 +137,11 @@ namespace SignUpApi
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SignUpApi v1"));
             }
+            // global error handler
+            app.UseMiddleware<ErrorHandlerMiddleware>();
 
+            // custom jwt auth middleware
+            app.UseMiddleware<JwtMiddleware>();
             app.UseHttpsRedirection();
 
             app.UseRouting();

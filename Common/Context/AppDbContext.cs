@@ -1,4 +1,5 @@
 ﻿
+using Assessment.Common.Models.Database;
 using Common.Models.Database;
 using Common.Models.Database.API;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ namespace Common.Context
         }
         public DbSet<User> Users { get; set; }
         public DbSet<ConversationReferenceEntity> conversationReferenceEntities { get; set; }
+        public DbSet<MailLog> MailLogs { get; set; }
 
     }
 }
