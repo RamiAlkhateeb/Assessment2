@@ -22,7 +22,7 @@ namespace Assessment.Common.Helpers.Services
 
 
             SmtpClient client = new SmtpClient("smtp.gmail.com", 587); //Gmail smtp 
-            client.Credentials = new System.Net.NetworkCredential("rami13195@gmail.com", "acmpform");
+            client.Credentials = new System.Net.NetworkCredential("rami13195@gmail.com", "NonRealPasswrod");
             client.UseDefaultCredentials = false;
 
             client.DeliveryMethod = SmtpDeliveryMethod.Network;
@@ -31,7 +31,7 @@ namespace Assessment.Common.Helpers.Services
             if (data.email != null)
                 try
                 {
-                    //client.Send(mail);
+                    client.Send(mail);
 
                 }
                 catch (Exception e)
