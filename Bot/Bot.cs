@@ -161,6 +161,7 @@ namespace Assessment.Bot
                 var mailData = new MailLog();
                 mailData.AlternativeEmail = submitedData.email;
                 mailData.Department = submitedData.dept;
+                mailData.SentAt = DateTime.Now;
                 mailData.UserId = user.Id + "";
                 _signupService.SaveMailLog(mailData);
 

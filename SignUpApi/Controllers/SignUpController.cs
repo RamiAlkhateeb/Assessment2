@@ -62,6 +62,8 @@ namespace SignUpApi.Controllers
                     mailData.AlternativeEmail = mail.Email;
                     mailData.Department = mail.Department;
                     mailData.SentAt = DateTime.Now;
+                    mailData.UserId = user.Id + "";
+
                     // mailData.UserId = turnContext.Activity.Conversation.AadObjectId;
                     _signUpService.SaveMailLog(mailData);
                 }
