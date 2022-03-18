@@ -38,7 +38,7 @@ namespace Common.Helpers.Services
             _appSettings = appSettings.Value;
         }
 
-        public Models.Database.API.User GetById(int id)
+        public User GetById(int id)
         {
             var user = _context.Users.Find(id);
             if (user == null) throw new KeyNotFoundException("User not found");
@@ -52,7 +52,7 @@ namespace Common.Helpers.Services
                 throw new AppException("User with the email '" + model.Email + "' already exists");
 
             // map model to new user object
-            var user = _mapper.Map<Models.Database.API.User>(model);
+            var user = _mapper.Map<User>(model);
 
             // hash password
             user.PasswordHash = BCryptNet.HashPassword(model.Password);
@@ -77,64 +77,7 @@ namespace Common.Helpers.Services
 
         }
 
-        public Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData)
-        {
-            var user = new Models.Database.API.User();
-            string s = " ";
-            string userdatamail = userData.Email;
-            if (!_context.Users.Any(x => x.Email == userData.Email))
-                foreach (var a in _context.Users.ToList())
-                {
-                    s = a.Email;
-                    if (s == userdatamail)
-                        s = " ";
-                }
-            
-            else
-            {
-                user = _context.Users.FirstOrDefault(u => u.Email == userData.Email);
-
-            }
-
-            //var graphUser = new Microsoft.Graph.User
-            //{
-            //    AccountEnabled = true,
-            //    DisplayName = user.FirstName + " " + user.LastName,
-            //    MailNickname = "",
-            //    UserPrincipalName = user.FirstName+"@rami13195gmail.onmicrosoft.com",
-            //    PasswordProfile = new PasswordProfile
-            //    {
-            //        ForceChangePasswordNextSignIn = false,
-            //        Password = user.PasswordHash
-            //    },
-            //    Department = user.Department,
-            //    Mail = userData.Email
-                
-            //};
-
-            //var users = _graphServiceClient.Users.Request().GetAsync().Result;
-            //var returnedUser = new Microsoft.Graph.User();
-            //bool isUserFound = false;
-            //foreach( var graphuser in users)
-            //{
-            //    if (graphuser.Mail == graphUser.Mail)
-            //    {
-            //        isUserFound = true;
-            //        returnedUser = graphuser;
-            //    }
-
-            //}
-            //if (isUserFound)
-            //    return returnedUser;
-            
-            //var createdUser = _graphServiceClient.Users
-            //    .Request()
-            //    .AddAsync(graphUser).Result;
-            user.AadObjectId = userData.AadObjectId;
-            _context.Users.Update(user);
-            _context.SaveChanges();
-            return user;
-        }
+        
 
         public AuthenticateResponse Login(LoginRequest loginInfo)
         {
@@ -152,9 +95,9 @@ namespace Common.Helpers.Services
             return _context.conversationReferenceEntities;
         }
 
-        public IEnumerable<MailLog> GetMailLogs()
+        public List<MailLog> GetMailLogs()
         {
-            return _context.MailLogs;
+            return _context.MailLogs.ToList();
         }
 
         public MailLog SaveMailLog(MailLog mailLog)

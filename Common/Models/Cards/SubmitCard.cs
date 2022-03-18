@@ -13,7 +13,7 @@ namespace Assessment.Common.Models.Cards
     public class SubmitCard
     {
 
-        public static Attachment createCard(User user)
+        public static Attachment createCard(User user,CardText text)
         {
             AdaptiveCard card = new AdaptiveCard(new AdaptiveSchemaVersion("1.1"));
             List<AdaptiveColumn> TextColumns = new List<AdaptiveColumn>();
@@ -24,8 +24,8 @@ namespace Assessment.Common.Models.Cards
             Random rand = new Random();
             NameColumn.Items.Add(new AdaptiveImage()
             {
-                Url = new Uri("https://picsum.photos/100/100?image=" + rand.Next(1, 1000)),
-                Size = AdaptiveImageSize.Large,
+                Url = new Uri("https://picsum.photos/100/100?image=" + user.Id),//rand.Next(1, 1000)),
+                Size = AdaptiveImageSize.Medium,
                 Style = AdaptiveImageStyle.Person,
                 //Spacing = AdaptiveSpacing.Padding
 
@@ -38,16 +38,9 @@ namespace Assessment.Common.Models.Cards
             {
                 Weight = AdaptiveTextWeight.Bolder,
                 Text = "Hi "+user.FirstName + " " + user.LastName,
-                //Wrap= true
+                Wrap= true
             });
-            TitleColumn.Items.Add(new AdaptiveTextBlock()
-            {
-                IsSubtle = true,
-                Text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-                Weight = AdaptiveTextWeight.Lighter,
-                Spacing = AdaptiveSpacing.None,
-                Wrap = true
-            });
+            
 
             TextColumns.Add(NameColumn);
             TextColumns.Add(TitleColumn);
@@ -77,6 +70,21 @@ namespace Assessment.Common.Models.Cards
             InputColumns.Add(mailFieldCol);
             InputColumns.Add(deptFieldCol);
 
+            List<AdaptiveColumn> Warnings = new List<AdaptiveColumn>();
+
+            var WarningTextColumn = new AdaptiveColumn();
+            WarningTextColumn.Type = "Column";
+            WarningTextColumn.Width = AdaptiveColumnWidth.Auto;
+            WarningTextColumn.Items.Add(new AdaptiveTextBlock()
+            {
+                IsSubtle = true,
+                Text = text.Text,
+                Color = text.Color,
+                Weight = AdaptiveTextWeight.Lighter,
+                Spacing = AdaptiveSpacing.None,
+                Wrap = true
+            });
+            Warnings.Add(WarningTextColumn);
             card.Body.Add(new AdaptiveColumnSet()
             {
                 Spacing = AdaptiveSpacing.Medium,
@@ -88,6 +96,12 @@ namespace Assessment.Common.Models.Cards
                 Spacing = AdaptiveSpacing.Medium,
 
                 Columns = InputColumns
+            });
+            card.Body.Add(new AdaptiveColumnSet()
+            {
+                Spacing = AdaptiveSpacing.Medium,
+
+                Columns = Warnings
             });
 
             card.Actions = new List<AdaptiveAction>()

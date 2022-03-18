@@ -83,7 +83,10 @@ namespace SignUpApi.Controllers
                 conversation.Conversation.AadObjectId = _signupService.GetReferenceEntity(conversation.Conversation.Id).AadObjectId;
             }
             var user = _signupService.GetById(UserInfo.userId);
-            var card = SubmitCard.createCard(user);
+            CardText text = new CardText();
+            text.Text = "Enter Email and Department to send registration mail";
+            text.Color = AdaptiveCards.AdaptiveTextColor.Accent;
+            var card = SubmitCard.createCard(user,text);
             IMessageActivity message = MessageFactory.Attachment(card);
             await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversation,
                async (context, token) => await BotCallback(message, context, token),

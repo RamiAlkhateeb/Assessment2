@@ -20,6 +20,7 @@ using System.Net.Mail;
 using Assessment.Common.Helpers.Services;
 using Assessment.Common.Models.Database;
 using Assessment.Common.Helpers;
+using System.Linq;
 using Assessment.Common.Models;
 
 namespace Assessment.Bot
@@ -61,17 +62,11 @@ namespace Assessment.Bot
 
             var currentMember = await TeamsInfo.GetMemberAsync(turnContext, turnContext.Activity.From.Id, cancellationToken);
             if (activity.Action.Equals("add"))
-            {
                 //var createUser = _signupService.SaveUserToAD(currentMember);
                 _conversationReferenceHelper.AddorUpdateConversationRefrenceAsync(botConRef, currentMember);
-
-            }
             else if (activity.Action.Equals("remove"))
-            {
-                
                 //var createUser = _signupService.SaveUserToAD(currentMember);
                 _conversationReferenceHelper.AddorUpdateConversationRefrenceAsync(botConRef, currentMember);
-            }
 
 
         }
@@ -79,8 +74,6 @@ namespace Assessment.Bot
         private void AddConversationReference(Activity activity)
         {
             var conversationReference = activity.GetConversationReference();
-            //var conversationReferenceString = conversationReference.Conversation.Id;
-
 
             _conversationReferences.AddOrUpdate(conversationReference.User.Id, conversationReference, (key, newValue) => conversationReference);
         }
@@ -105,8 +98,6 @@ namespace Assessment.Bot
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
                     await turnContext.SendActivityAsync($"Hi there - {member.Name}. {WelcomeMessage}", cancellationToken: cancellationToken);
-                    //await turnContext.SendActivityAsync(InfoMessage, cancellationToken: cancellationToken);
-                    //await turnContext.SendActivityAsync($"{LocaleMessage} Current locale is '{turnContext.Activity.GetLocale()}'.", cancellationToken: cancellationToken);
                     await turnContext.SendActivityAsync(PatternMessage, cancellationToken: cancellationToken);
                 }
             }
@@ -115,72 +106,38 @@ namespace Assessment.Bot
         protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
         {
       
-            //await turnContext.SendActivityAsync(MessageFactory.Text("sending email"), cancellationToken);
+            var activityId = turnContext.Activity.ReplyToId;
 
-            var activityId = turnContext.Activity.Id;
+            var user = _signupService.GetUserByAadObjectId(turnContext.Activity.From.AadObjectId);
+            CardText text = new CardText();
 
-            //var welcomeUserStateAccessor = _userState.CreateProperty<WelcomeUserState>(nameof(WelcomeUserState));
-            //var didBotWelcomeUser = await welcomeUserStateAccessor.GetAsync(turnContext, () => new WelcomeUserState(), cancellationToken);
-            //AddConversationReference(turnContext.Activity as Activity);
-          
             try
             {
                 SendMail(turnContext);
-                //create nre message activity
-                var messageActivity = new Activity
-                {
-                    Text = "Mail Sent",
-                    ReplyToId = activityId
-                };
-                //await turnContext.UpdateActivityAsync(messageActivity);
-                await turnContext.SendActivityAsync(MessageFactory.Text("Email Sent"), cancellationToken);
+                text.Text = "Email is sent";
+                text.Color = AdaptiveTextColor.Good;
+                var card = SubmitCard.createCard(user, text);
+                //IMessageActivity message = MessageFactory.Attachment(card);
+                var activity = MessageFactory.Attachment(card);
+                activity.Id = turnContext.Activity.ReplyToId;
+                await turnContext.UpdateActivityAsync(activity, cancellationToken);
 
                 //update card 
             }
             catch (Exception e)
             {
-                var messageActivity = new Activity
-                {
-                    Text = e.Message,
-                    ReplyToId = activityId
-                };
-                //await turnContext.UpdateActivityAsync(messageActivity);
-                await turnContext.SendActivityAsync(MessageFactory.Text("Email Not sent " + e.Message), cancellationToken);
-
-                //update error card
+               
+                text.Text = "Email is Not sent, " + e.Message;
+                text.Color = AdaptiveTextColor.Attention;
+                var card = SubmitCard.createCard(user,text);
+                //IMessageActivity message = MessageFactory.Attachment(card);
+                var activity = MessageFactory.Attachment(card);
+                activity.Id = turnContext.Activity.ReplyToId;
+                await turnContext.UpdateActivityAsync(activity, cancellationToken);
+                
             }
 
 
-
-            #region comments
-            //string to = data.email; //To address    
-            //string from = "rami13195@gmail.com"; //From address
-            //MailMessage mail = new MailMessage(from,to);
-            //mail.Body = "teeeeeest";
-            //mail.Subject = "subjeect" + data.dept;
-
-
-            //SmtpClient client = new SmtpClient("smtp.gmail.com", 587); //Gmail smtp 
-            //client.Credentials = new System.Net.NetworkCredential("rami13195@gmail.com", "");
-            //client.UseDefaultCredentials = false;
-
-            //client.DeliveryMethod = SmtpDeliveryMethod.Network;
-            //client.EnableSsl = true;
-
-            //if (data.email != null)
-            //    try
-            //    {
-            //        client.Send(mail);
-
-            //    }
-            //    catch (Exception e)
-            //    {
-
-            //    }
-
-            #endregion
-
-            //await turnContext.SendActivityAsync(MessageFactory.Text("Done"), cancellationToken);
 
 
             await _userState.SaveChangesAsync(turnContext, cancellationToken: cancellationToken);
@@ -193,6 +150,10 @@ namespace Assessment.Bot
             MailValidator mailValidator = new MailValidator();
             DataToSend submitedData = ((JObject)message.Value).ToObject<DataToSend>();
             var user = _signupService.GetUserByAadObjectId(turnContext.Activity.From.AadObjectId);
+
+            var oldLogs = _signupService.GetMailLogs();
+            if(oldLogs.Any(a => a.AlternativeEmail == submitedData.email))
+                throw new Exception("This user is already in the system");
 
             if (mailValidator.IsMailValid(submitedData.email))
             {

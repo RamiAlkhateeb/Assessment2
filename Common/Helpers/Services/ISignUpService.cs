@@ -22,9 +22,9 @@ namespace Common.Helpers.Services
         AuthenticateResponse Login(LoginRequest user);
         void CreateUser(SignUpRequest model);
         ConversationReferenceEntity GetReferenceEntity(string id);
-        Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData);
+        //Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData);
         MailLog SaveMailLog(MailLog mailLog);
-        IEnumerable<MailLog> GetMailLogs();
+        List<MailLog> GetMailLogs();
         User GetUserByAadObjectId(string id);
 
     }
