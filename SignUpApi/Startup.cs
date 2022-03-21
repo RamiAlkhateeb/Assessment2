@@ -71,6 +71,7 @@ namespace SignUpApi
                 );
 
             services.AddDbContext<AppDbContext>(db => db.UseSqlServer(Configuration["ConnectionStrings:WebApiDatabase"]));
+            services.AddHttpContextAccessor();
 
             services.AddSwaggerGen(c =>
             {

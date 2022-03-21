@@ -26,7 +26,6 @@ namespace Common.Helpers.Services
         //Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData);
         MailLog SaveMailLog(MailLog mailLog);
         List<MailLog> GetMailLogs();
-        User GetUserByAadObjectId(string id);
 
         void SendEmail(DataToSend data, string name);
 

@@ -116,10 +116,6 @@ namespace Common.Helpers.Services
             return _context.conversationReferenceEntities.FirstOrDefault(c => c.ConversationId == id);
         }
 
-        public User GetUserByAadObjectId(string id)
-        {
-            return _context.Users.FirstOrDefault(c => c.AadObjectId == id);
-        }
 
         public void SendEmail(DataToSend data, string name)
         {

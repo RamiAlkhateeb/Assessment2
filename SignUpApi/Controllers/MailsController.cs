@@ -1,20 +1,23 @@
 ﻿using Assessment.Common.Helpers;
+using Assessment.Common.Models;
 using Assessment.Common.Models.Cards;
+using Assessment.Common.Models.Database;
+using Assessment.Common.Models.Request;
 using Common.Authorization;
 using Common.Helpers.Bot;
 using Common.Helpers.Services;
 using Common.Models.Database.API;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph;
+using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +26,7 @@ namespace SignUpApi.Controllers
 {
     //[Route("api/[controller]")]
     [ApiController]
-    public class NotifyController : ControllerBase
+    public class MailsController : ControllerBase
     {
         private readonly IBotFrameworkHttpAdapter _adapter;
         private readonly string _appId;
@@ -31,16 +34,15 @@ namespace SignUpApi.Controllers
         private readonly IConversationReferencesHelper _conversationReferenceHelper;
         private readonly ISignUpService _signupService;
         private string _activityId;
-        private readonly ILogger<NotifyController> _logger;
-        private IJwtUtils _jwtUtils;
+        
+        private IHttpContextAccessor _httpContextAccessor;
 
-
-        public NotifyController(IConversationReferencesHelper conversationReferencesHelper,
+        public MailsController(IConversationReferencesHelper conversationReferencesHelper,
             IBotFrameworkHttpAdapter adapter,
             IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences,
             ISignUpService signupService,
-            ILogger<NotifyController> logger,
-             IJwtUtils jwtUtils
+            
+             IHttpContextAccessor httpContextAccessor
             )
         {
             _adapter = adapter;
@@ -48,8 +50,7 @@ namespace SignUpApi.Controllers
             _conversationReferences = conversationReferences;
             _appId = configuration["MicrosoftAppId"] ?? string.Empty;
             _signupService = signupService;
-            _logger = logger;
-            _jwtUtils =  jwtUtils;
+            _httpContextAccessor = httpContextAccessor;
 
         }
 
@@ -58,17 +59,8 @@ namespace SignUpApi.Controllers
         [HttpPost("api/signup/card")]
         public async Task<IActionResult> PostCardToUser([FromHeader] string authorization)
         {
-            var UserInfo = new TokenUser();
-            if (AuthenticationHeaderValue.TryParse(authorization, out var headerValue))
-            {
-                // we have a valid AuthenticationHeaderValue that has the following details:
-
-                var scheme = headerValue.Scheme;
-                var parameter = headerValue.Parameter;
-                UserInfo = _jwtUtils.ValidateJwtToken(parameter);
-                // scheme will be "Bearer"
-                // parmameter will be the token itself.
-            }
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+            
 
             if (_conversationReferences.Count == 0)
             {
@@ -76,94 +68,76 @@ namespace SignUpApi.Controllers
                 _conversationReferences = getConversationDectionary();
             }
             var conversationList = _conversationReferences.Values;
-            var conversation = conversationList.FirstOrDefault(c => c.Conversation.AadObjectId == UserInfo.AadObjectId);
+            var conversation = conversationList.FirstOrDefault(c => c.Conversation.AadObjectId == currentUser.AadObjectId);
             if(conversation == null)
             {
                 conversation = conversationList.FirstOrDefault();
                 conversation.Conversation.AadObjectId = _signupService.GetReferenceEntity(conversation.Conversation.Id).AadObjectId;
             }
-            var user = _signupService.GetById(UserInfo.userId);
             CardText text = new CardText();
             text.Text = "Enter Email and Department to send registration mail";
             text.Color = AdaptiveCards.AdaptiveTextColor.Accent;
-            var card = SubmitCard.createCard(user,text);
+            var card = SubmitCard.createCard(currentUser,text);
             IMessageActivity message = MessageFactory.Attachment(card);
             await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversation,
                async (context, token) => await BotCallback(message, context, token),
                default(CancellationToken));
-            #region comments
-            //foreach (var conversationReference in _conversationReferences.Values)
-            //{
-            //    if(conversationReference.Conversation.AadObjectId == null)
-            //    {
-            //        conversationReference.Conversation.AadObjectId = _signupService.GetReferenceEntity(conversationReference.Conversation.Id).AadObjectId;
-            //    }
-            //    if(conversationReference.Conversation.AadObjectId == UserInfo.AadObjectId)
-            //    {
-            //        var user = _signupService.GetById(UserInfo.userId);
-            //        var card = SubmitCard.createCard(user);
-            //        IMessageActivity message = MessageFactory.Attachment(card);
-            //        await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference,
-            //           async (context, token) => await BotCallback(message, context, token),
-            //           default(CancellationToken));
-            //        conversationFound = true;
-            //    }
-
-
-            //}
-            #endregion
+            
 
             if (conversation == null)
                 throw new AppException("Conversation not found");
-            return Ok("sent to user");
+            return Ok("Sent to user");
                
 
         }
 
-        #region graphCode
 
-        [HttpGet("api/user")]
-        public async Task<IActionResult> GetUser()
+        [Authorize(Role.Admin)]
+        [HttpPost]
+        [Route("sendmail")]
+        public IActionResult SendEmail([FromBody] MailRequest mail, [FromHeader] string authorization)
         {
+            
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+            MailValidator mailValidator = new MailValidator();
+            var dataToSend = new DataToSend();
+            dataToSend.email = mail.Email;
+            dataToSend.dept = mail.Department;
+            //return Ok(_userService.GetAll().AsQueryable());
+            if (mailValidator.IsMailValid(mail.Email))
+            {
+                try
+                {
+                    _signupService.SendEmail(dataToSend,currentUser.FirstName);
+                    var mailData = new MailLog();
+                    mailData.AlternativeEmail = mail.Email;
+                    mailData.Department = mail.Department;
+                    mailData.SentAt = DateTime.Now;
+                    mailData.UserId = currentUser.Id + "";
 
-            //var user = _graphServiceClient.Users.Request().GetAsync().Result;
+                    // mailData.UserId = turnContext.Activity.Conversation.AadObjectId;
+                    _signupService.SaveMailLog(mailData);
+                }
+                catch (Exception e)
+                {
+                    throw new AppException("Mail not sent, " + e.Message);
 
-            //var me = _graphServiceClient.Me.Request().GetAsync().Result;
-
-            //// var photo = await _graphApiClientDirect.GetGraphApiProfilePhoto();
-            //// var file = await _graphApiClientDirect.GetSharepointFile();
-            return Ok();
+                }
 
 
+            }
+            else
+                throw new AppException("Mail Not Valid");
+            return Ok("Email is sent");
         }
 
-        [HttpGet("api/postuser")]
-        public async Task<IActionResult> PosstUser()
+        [Authorize(Role.Admin)]
+        [HttpGet]
+        [Route("getdetails")]
+        public IActionResult GetUserDetails()
         {
-
-            //var user = new Microsoft.Graph.User
-            //{
-            //    AccountEnabled = true,
-            //    DisplayName = "Aya Mansour",
-            //    MailNickname = "AyaM",
-            //    UserPrincipalName = "Aya@rami13195gmail.onmicrosoft.com",
-            //    PasswordProfile = new PasswordProfile
-            //    {
-            //        ForceChangePasswordNextSignIn = false,
-            //        Password = "Rami@603"
-            //    }
-            //};
-
-            //var userr = await _graphServiceClient.Users
-            //    .Request()
-            //    .AddAsync(user);
-            return Ok();
-
-
-
+            return Ok(_signupService.GetMailLogs());
         }
-        #endregion
-
 
 
         private async Task BotCallback(IMessageActivity message, ITurnContext turnContext, CancellationToken cancellationToken)
