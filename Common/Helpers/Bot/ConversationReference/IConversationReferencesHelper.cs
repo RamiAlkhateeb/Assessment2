@@ -9,7 +9,7 @@ namespace Common.Helpers.Bot
     public interface IConversationReferencesHelper
     {
         void AddorUpdateConversationRefrenceAsync(ConversationReference reference, TeamsChannelAccount member);
-        //aTask DeleteConversationRefrenceAsync(ConversationReference reference, TeamsChannelAccount member);
+        Task DeleteConversationRefrenceAsync(ConversationReference reference, TeamsChannelAccount member);
         IEnumerable<ConversationReferenceEntity> GetConversationRefrenceAsync();
     }
 }

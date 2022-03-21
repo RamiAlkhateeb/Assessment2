@@ -1,5 +1,4 @@
 ﻿using Assessment.Common.Helpers;
-using Assessment.Common.Helpers.Services;
 using Assessment.Common.Models;
 using Assessment.Common.Models.Database;
 using Assessment.Common.Models.Request;
@@ -12,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace SignUpApi.Controllers
@@ -21,33 +21,56 @@ namespace SignUpApi.Controllers
     public class SignUpController : ControllerBase
     {
         private ISignUpService _signUpService;
-        public SignUpController(ISignUpService signUpService)
+        private IJwtUtils _jwtUtils;
+        public SignUpController(ISignUpService signUpService, IJwtUtils jwtUtils)
         {
             _signUpService = signUpService;
+            _jwtUtils = jwtUtils;
         }
 
 
         [Authorize(Role.Admin)]
-        //[EnableQuery]
         [HttpPost]
         [Route("sendmail")]
-        public IActionResult SendEmail([FromBody] MailRequest mail)
+        public IActionResult SendEmail([FromBody] MailRequest mail, [FromHeader] string authorization)
         {
+            var userInfo = new TokenUser();
+            if (AuthenticationHeaderValue.TryParse(authorization, out var headerValue))
+            {
+                // we have a valid AuthenticationHeaderValue that has the following details:
+
+                var scheme = headerValue.Scheme;
+                var parameter = headerValue.Parameter;
+                userInfo = _jwtUtils.ValidateJwtToken(parameter);
+                // scheme will be "Bearer"
+                // parmameter will be the token itself.
+            }
+            var user = _signUpService.GetUserByAadObjectId(userInfo.AadObjectId);
             MailValidator mailValidator = new MailValidator();
-            EmailSenderService emailSenderService = new EmailSenderService();
             var dataToSend = new DataToSend();
             dataToSend.email = mail.Email;
             dataToSend.dept = mail.Department;
             //return Ok(_userService.GetAll().AsQueryable());
             if (mailValidator.IsMailValid(mail.Email))
             {
-                emailSenderService.SendEmail(dataToSend , "");
-                var mailData = new MailLog();
-                mailData.AlternativeEmail = mail.Email;
-                mailData.Department = mail.Department;
-                mailData.SentAt = DateTime.Now;
-               // mailData.UserId = turnContext.Activity.Conversation.AadObjectId;
-                _signUpService.SaveMailLog(mailData);
+                try
+                {
+                    _signUpService.SendEmail(dataToSend, user.FirstName);
+                    var mailData = new MailLog();
+                    mailData.AlternativeEmail = mail.Email;
+                    mailData.Department = mail.Department;
+                    mailData.SentAt = DateTime.Now;
+                    mailData.UserId = user.Id + "";
+
+                    // mailData.UserId = turnContext.Activity.Conversation.AadObjectId;
+                    _signUpService.SaveMailLog(mailData);
+                }
+                catch(Exception e)
+                {
+                    throw new AppException("Mail not sent, "+ e.Message);
+
+                }
+
 
             }
             else
@@ -56,7 +79,6 @@ namespace SignUpApi.Controllers
         }
 
         [Authorize(Role.Admin)]
-        //[EnableQuery]
         [HttpGet]
         [Route("getdetails")]
         public IActionResult GetUserDetails()
