@@ -16,6 +16,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Bot.Schema.Teams;
 using Assessment.Common.Models.Database;
+using Assessment.Common.Models;
+using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
 
 namespace Common.Helpers.Services
 {
@@ -25,20 +28,21 @@ namespace Common.Helpers.Services
         private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private IJwtUtils _jwtUtils;
-        
+        private readonly IConfiguration _configuration;
         public SignUpService(AppDbContext context,
             IMapper mapper,
             IJwtUtils jwtUtils,
-            
+            IConfiguration configuration,
                              IOptions<AppSettings> appSettings)
         {
             _context = context;
             _mapper = mapper;
             _jwtUtils = jwtUtils;
             _appSettings = appSettings.Value;
+            _configuration = configuration;
         }
 
-        public Models.Database.API.User GetById(int id)
+        public User GetById(int id)
         {
             var user = _context.Users.Find(id);
             if (user == null) throw new KeyNotFoundException("User not found");
@@ -52,7 +56,7 @@ namespace Common.Helpers.Services
                 throw new AppException("User with the email '" + model.Email + "' already exists");
 
             // map model to new user object
-            var user = _mapper.Map<Models.Database.API.User>(model);
+            var user = _mapper.Map<User>(model);
 
             // hash password
             user.PasswordHash = BCryptNet.HashPassword(model.Password);
@@ -77,64 +81,7 @@ namespace Common.Helpers.Services
 
         }
 
-        public Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData)
-        {
-            var user = new Models.Database.API.User();
-            string s = " ";
-            string userdatamail = userData.Email;
-            if (!_context.Users.Any(x => x.Email == userData.Email))
-                foreach (var a in _context.Users.ToList())
-                {
-                    s = a.Email;
-                    if (s == userdatamail)
-                        s = " ";
-                }
-            
-            else
-            {
-                user = _context.Users.FirstOrDefault(u => u.Email == userData.Email);
-
-            }
-
-            //var graphUser = new Microsoft.Graph.User
-            //{
-            //    AccountEnabled = true,
-            //    DisplayName = user.FirstName + " " + user.LastName,
-            //    MailNickname = "",
-            //    UserPrincipalName = user.FirstName+"@rami13195gmail.onmicrosoft.com",
-            //    PasswordProfile = new PasswordProfile
-            //    {
-            //        ForceChangePasswordNextSignIn = false,
-            //        Password = user.PasswordHash
-            //    },
-            //    Department = user.Department,
-            //    Mail = userData.Email
-                
-            //};
-
-            //var users = _graphServiceClient.Users.Request().GetAsync().Result;
-            //var returnedUser = new Microsoft.Graph.User();
-            //bool isUserFound = false;
-            //foreach( var graphuser in users)
-            //{
-            //    if (graphuser.Mail == graphUser.Mail)
-            //    {
-            //        isUserFound = true;
-            //        returnedUser = graphuser;
-            //    }
-
-            //}
-            //if (isUserFound)
-            //    return returnedUser;
-            
-            //var createdUser = _graphServiceClient.Users
-            //    .Request()
-            //    .AddAsync(graphUser).Result;
-            user.AadObjectId = userData.AadObjectId;
-            _context.Users.Update(user);
-            _context.SaveChanges();
-            return user;
-        }
+        
 
         public AuthenticateResponse Login(LoginRequest loginInfo)
         {
@@ -152,9 +99,9 @@ namespace Common.Helpers.Services
             return _context.conversationReferenceEntities;
         }
 
-        public IEnumerable<MailLog> GetMailLogs()
+        public List<MailLog> GetMailLogs()
         {
-            return _context.MailLogs;
+            return _context.MailLogs.ToList();
         }
 
         public MailLog SaveMailLog(MailLog mailLog)
@@ -172,6 +119,47 @@ namespace Common.Helpers.Services
         public User GetUserByAadObjectId(string id)
         {
             return _context.Users.FirstOrDefault(c => c.AadObjectId == id);
+        }
+
+        public void SendEmail(DataToSend data, string name)
+        {
+            string to = data.email; //To address    
+            string from = _configuration["SmtpSettings:SenderEmail"]; //From address
+            MailMessage mail = new MailMessage(from, to);
+            var receiver = String.IsNullOrEmpty(name) ? GetEmailName(data.email) : name;
+            mail.Body = "Hi " + receiver + " from " + data.dept + ". Thank you for signing up!” ";
+            mail.Subject = "Email from the Bot";
+
+
+            SmtpClient client = new SmtpClient("smtp.gmail.com", 587); //Gmail smtp 
+            client.Credentials = new System.Net.NetworkCredential(from, _configuration["SmtpSettings:Password"]);
+            client.UseDefaultCredentials = false;
+
+            client.DeliveryMethod = SmtpDeliveryMethod.Network;
+            client.EnableSsl = true;
+
+            if (data.email != null)
+                try
+                {
+                    //client.Send(mail);
+
+                }
+                catch (Exception e)
+                {
+                    throw new AppException("Sending Email Failed, " + e.Message);
+                }
+        }
+
+        public string GetEmailName(string mail)
+        {
+            string name = "";
+            foreach (var letter in mail)
+            {
+                if (letter == '@')
+                    break;
+                name += letter;
+            }
+            return name;
         }
 
     }

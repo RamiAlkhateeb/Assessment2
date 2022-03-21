@@ -1,4 +1,5 @@
-﻿using Assessment.Common.Models.Database;
+﻿using Assessment.Common.Models;
+using Assessment.Common.Models.Database;
 using Assessment.Common.Models.Request;
 using Assessment.Common.Models.Response;
 using Common.Models.Database;
@@ -22,10 +23,12 @@ namespace Common.Helpers.Services
         AuthenticateResponse Login(LoginRequest user);
         void CreateUser(SignUpRequest model);
         ConversationReferenceEntity GetReferenceEntity(string id);
-        Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData);
+        //Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData);
         MailLog SaveMailLog(MailLog mailLog);
-        IEnumerable<MailLog> GetMailLogs();
+        List<MailLog> GetMailLogs();
         User GetUserByAadObjectId(string id);
+
+        void SendEmail(DataToSend data, string name);
 
     }
 }

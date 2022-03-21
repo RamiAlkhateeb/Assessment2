@@ -27,11 +27,11 @@ namespace Common.Helpers.Bot
             _signupService.SaveConversationReference(entity);
         }
 
-        //public async Task DeleteConversationRefrenceAsync(ConversationReference reference, TeamsChannelAccount member)
-        //{
-        //    var entity = ConvertConversationReferanceForDB(reference, member);
-        //    await DeleteAsync(entity);
-        //}
+        public async Task DeleteConversationRefrenceAsync(ConversationReference reference, TeamsChannelAccount member)
+        {
+            var entity = ConvertConversationReferanceForDB(reference, member);
+            //await DeleteAsync(entity);
+        }
 
         public IEnumerable<ConversationReferenceEntity> GetConversationRefrenceAsync()
         {
