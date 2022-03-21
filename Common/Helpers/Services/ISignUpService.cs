@@ -1,4 +1,5 @@
-﻿using Assessment.Common.Models.Database;
+﻿using Assessment.Common.Models;
+using Assessment.Common.Models.Database;
 using Assessment.Common.Models.Request;
 using Assessment.Common.Models.Response;
 using Common.Models.Database;
@@ -26,6 +27,8 @@ namespace Common.Helpers.Services
         MailLog SaveMailLog(MailLog mailLog);
         List<MailLog> GetMailLogs();
         User GetUserByAadObjectId(string id);
+
+        void SendEmail(DataToSend data, string name);
 
     }
 }

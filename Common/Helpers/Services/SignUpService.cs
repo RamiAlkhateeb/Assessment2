@@ -16,6 +16,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Bot.Schema.Teams;
 using Assessment.Common.Models.Database;
+using Assessment.Common.Models;
+using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
 
 namespace Common.Helpers.Services
 {
@@ -25,17 +28,18 @@ namespace Common.Helpers.Services
         private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private IJwtUtils _jwtUtils;
-        
+        private readonly IConfiguration _configuration;
         public SignUpService(AppDbContext context,
             IMapper mapper,
             IJwtUtils jwtUtils,
-            
+            IConfiguration configuration,
                              IOptions<AppSettings> appSettings)
         {
             _context = context;
             _mapper = mapper;
             _jwtUtils = jwtUtils;
             _appSettings = appSettings.Value;
+            _configuration = configuration;
         }
 
         public User GetById(int id)
@@ -115,6 +119,47 @@ namespace Common.Helpers.Services
         public User GetUserByAadObjectId(string id)
         {
             return _context.Users.FirstOrDefault(c => c.AadObjectId == id);
+        }
+
+        public void SendEmail(DataToSend data, string name)
+        {
+            string to = data.email; //To address    
+            string from = _configuration["SmtpSettings:SenderEmail"]; //From address
+            MailMessage mail = new MailMessage(from, to);
+            var receiver = String.IsNullOrEmpty(name) ? GetEmailName(data.email) : name;
+            mail.Body = "Hi " + receiver + " from " + data.dept + ". Thank you for signing up!” ";
+            mail.Subject = "Email from the Bot";
+
+
+            SmtpClient client = new SmtpClient("smtp.gmail.com", 587); //Gmail smtp 
+            client.Credentials = new System.Net.NetworkCredential(from, _configuration["SmtpSettings:Password"]);
+            client.UseDefaultCredentials = false;
+
+            client.DeliveryMethod = SmtpDeliveryMethod.Network;
+            client.EnableSsl = true;
+
+            if (data.email != null)
+                try
+                {
+                    //client.Send(mail);
+
+                }
+                catch (Exception e)
+                {
+                    throw new AppException("Sending Email Failed, " + e.Message);
+                }
+        }
+
+        public string GetEmailName(string mail)
+        {
+            string name = "";
+            foreach (var letter in mail)
+            {
+                if (letter == '@')
+                    break;
+                name += letter;
+            }
+            return name;
         }
 
     }

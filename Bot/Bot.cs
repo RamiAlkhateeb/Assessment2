@@ -17,7 +17,6 @@ using Common.Models.Database.API;
 using Assessment.Common.Models.Cards;
 using Newtonsoft.Json.Linq;
 using System.Net.Mail;
-using Assessment.Common.Helpers.Services;
 using Assessment.Common.Models.Database;
 using Assessment.Common.Helpers;
 using System.Linq;
@@ -39,6 +38,7 @@ namespace Assessment.Bot
         private readonly BotState _userState;
         private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
         private readonly ISignUpService _signupService;
+
 
         public Bot(IConversationReferencesHelper conversationReferencesHelper,
            UserState userState,
@@ -146,7 +146,6 @@ namespace Assessment.Bot
         private void SendMail(ITurnContext<IMessageActivity> turnContext)
         {
             var message = turnContext.Activity;
-            EmailSenderService emailSenderService = new EmailSenderService();
             MailValidator mailValidator = new MailValidator();
             DataToSend submitedData = ((JObject)message.Value).ToObject<DataToSend>();
             var user = _signupService.GetUserByAadObjectId(turnContext.Activity.From.AadObjectId);
@@ -157,7 +156,7 @@ namespace Assessment.Bot
 
             if (mailValidator.IsMailValid(submitedData.email))
             {
-                emailSenderService.SendEmail(submitedData, user.FirstName);
+                _signupService.SendEmail(submitedData, user.FirstName);
                 var mailData = new MailLog();
                 mailData.AlternativeEmail = submitedData.email;
                 mailData.Department = submitedData.dept;

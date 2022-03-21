@@ -1,5 +1,4 @@
 ﻿using Assessment.Common.Helpers;
-using Assessment.Common.Helpers.Services;
 using Assessment.Common.Models;
 using Assessment.Common.Models.Database;
 using Assessment.Common.Models.Request;
@@ -48,7 +47,6 @@ namespace SignUpApi.Controllers
             }
             var user = _signUpService.GetUserByAadObjectId(userInfo.AadObjectId);
             MailValidator mailValidator = new MailValidator();
-            EmailSenderService emailSenderService = new EmailSenderService();
             var dataToSend = new DataToSend();
             dataToSend.email = mail.Email;
             dataToSend.dept = mail.Department;
@@ -57,7 +55,7 @@ namespace SignUpApi.Controllers
             {
                 try
                 {
-                    emailSenderService.SendEmail(dataToSend, user.FirstName);
+                    _signUpService.SendEmail(dataToSend, user.FirstName);
                     var mailData = new MailLog();
                     mailData.AlternativeEmail = mail.Email;
                     mailData.Department = mail.Department;
