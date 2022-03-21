@@ -9,16 +9,13 @@ using Common.Helpers.Services;
 using Common.Models.Database.API;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,15 +31,13 @@ namespace SignUpApi.Controllers
         private readonly IConversationReferencesHelper _conversationReferenceHelper;
         private readonly ISignUpService _signupService;
         private string _activityId;
-        
         private IHttpContextAccessor _httpContextAccessor;
 
         public MailsController(IConversationReferencesHelper conversationReferencesHelper,
             IBotFrameworkHttpAdapter adapter,
             IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences,
             ISignUpService signupService,
-            
-             IHttpContextAccessor httpContextAccessor
+            IHttpContextAccessor httpContextAccessor
             )
         {
             _adapter = adapter;
@@ -56,7 +51,7 @@ namespace SignUpApi.Controllers
 
 
         [Authorize]
-        [HttpPost("api/signup/card")]
+        [HttpPost("api/card")]
         public async Task<IActionResult> PostCardToUser([FromHeader] string authorization)
         {
             var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
@@ -94,7 +89,7 @@ namespace SignUpApi.Controllers
 
         [Authorize(Role.Admin)]
         [HttpPost]
-        [Route("sendmail")]
+        [Route("api/mail")]
         public IActionResult SendEmail([FromBody] MailRequest mail, [FromHeader] string authorization)
         {
             
@@ -133,8 +128,8 @@ namespace SignUpApi.Controllers
 
         [Authorize(Role.Admin)]
         [HttpGet]
-        [Route("getdetails")]
-        public IActionResult GetUserDetails()
+        [Route("api/mails")]
+        public IActionResult GetMails()
         {
             return Ok(_signupService.GetMailLogs());
         }
