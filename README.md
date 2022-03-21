@@ -1,1 +1,4 @@
-Assessment2
+
+# A simple Bot app to send registration mails to users
+
+![](Capture.jpg)
