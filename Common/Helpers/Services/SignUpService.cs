@@ -25,20 +25,17 @@ namespace Common.Helpers.Services
     public class SignUpService : ISignUpService
     {
         private AppDbContext _context;
-        private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private IJwtUtils _jwtUtils;
         private readonly IConfiguration _configuration;
         public SignUpService(AppDbContext context,
             IMapper mapper,
             IJwtUtils jwtUtils,
-            IConfiguration configuration,
-                             IOptions<AppSettings> appSettings)
+            IConfiguration configuration)
         {
             _context = context;
             _mapper = mapper;
             _jwtUtils = jwtUtils;
-            _appSettings = appSettings.Value;
             _configuration = configuration;
         }
 
@@ -109,6 +106,11 @@ namespace Common.Helpers.Services
             _context.MailLogs.Add(mailLog);
             _context.SaveChanges();
             return mailLog;
+        }
+
+        public User GetUserByAadObjectId(string id)
+        {
+            return _context.Users.FirstOrDefault(c => c.AadObjectId == id);
         }
 
         public ConversationReferenceEntity GetReferenceEntity(string id)

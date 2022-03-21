@@ -25,6 +25,7 @@ namespace Common.Helpers.Services
         ConversationReferenceEntity GetReferenceEntity(string id);
         //Models.Database.API.User SaveUserToAD(TeamsChannelAccount userData);
         MailLog SaveMailLog(MailLog mailLog);
+        User GetUserByAadObjectId(string id);
         List<MailLog> GetMailLogs();
 
         void SendEmail(DataToSend data, string name);
