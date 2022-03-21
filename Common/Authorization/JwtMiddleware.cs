@@ -23,11 +23,14 @@ namespace Common.Authorization
         public async Task Invoke(HttpContext context, ISignUpService userService, IJwtUtils jwtUtils)
         {
             var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-            var userId = jwtUtils.ValidateJwtToken(token);
-            if (userId != null)
+            var user = jwtUtils.ValidateJwtToken(token);
+            if (user != null)
             {
                 // attach user to context on successful jwt validation
-                context.Items["User"] = userService.GetById(userId.userId);
+                context.Items["User"] = userService.GetById(user.userId);
+                context.Items["AadObjectId"] = user.AadObjectId;
+                context.Items["Role"] = user.Role;
+
             }
 
             await _next(context);

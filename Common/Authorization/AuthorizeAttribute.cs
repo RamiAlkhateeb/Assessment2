@@ -26,8 +26,8 @@ namespace Common.Authorization
                 return;
 
             // authorization
-            var user = (User)context.HttpContext.Items["User"];
-            if (user == null || (_roles.Any() && !_roles.Contains(user.Role)))
+            var role = (Role)context.HttpContext.Items["Role"];
+            if  (_roles.Any() && !_roles.Contains(role))
             {
                 // not logged in or role not authorized
                 context.Result = new JsonResult(new { message = "Unauthorized" }) { StatusCode = StatusCodes.Status401Unauthorized };
