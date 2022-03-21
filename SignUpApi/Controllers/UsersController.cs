@@ -22,7 +22,7 @@ namespace SignUpApi.Controllers
         
 
         [HttpPost]
-        [Route("register")]
+        [Route("api/account")]
         public IActionResult Create([FromBody] SignUpRequest model)
         {
             _signUpService.CreateUser(model);
@@ -32,7 +32,7 @@ namespace SignUpApi.Controllers
 
         [AllowAnonymous]
         [HttpPost]
-        [Route("login")]
+        [Route("api/user")]
         public IActionResult Login([FromBody] LoginRequest model)
         {
             var user = _signUpService.Login(model);
