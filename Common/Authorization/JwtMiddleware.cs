@@ -31,7 +31,8 @@ namespace Common.Authorization
                 context.Items["AadObjectId"] = user.AadObjectId;
                 context.Items["Role"] = user.Role;
 
-            }
+            }else
+                context.Items["Role"] = 99;
 
             await _next(context);
         }
