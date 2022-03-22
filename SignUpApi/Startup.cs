@@ -14,15 +14,11 @@ using Microsoft.Bot.Schema;
 using Assessment.Bot;
 using Common.Helpers.Services;
 using System.Collections.Concurrent;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Azure.Identity;
 using Microsoft.Graph;
 using Clincs.Common.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNet.OData.Extensions;
 using System.Text.Json.Serialization;
 using Assessment.Common.Helpers;
 using Common.Authorization;
@@ -155,7 +151,6 @@ namespace SignUpApi
             app.UseAuthorization();
             app.UseAuthentication();
             app.UseMiddleware<ErrorHandlerMiddleware>();
-            app.UseMiddleware<JwtMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

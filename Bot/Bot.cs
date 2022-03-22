@@ -21,6 +21,7 @@ using Assessment.Common.Models.Database;
 using Assessment.Common.Helpers;
 using System.Linq;
 using Assessment.Common.Models;
+using Assessment.Common.Models.Request;
 
 namespace Assessment.Bot
 {
@@ -109,14 +110,14 @@ namespace Assessment.Bot
             var activityId = turnContext.Activity.ReplyToId;
 
             var user = _signupService.GetUserByAadObjectId(turnContext.Activity.From.AadObjectId);
-            CardText text = new CardText();
+            
 
             try
             {
                 SendMail(turnContext);
-                text.Text = "Email is sent";
-                text.Color = AdaptiveTextColor.Good;
-                var card = SubmitCard.createCard(user, text);
+                
+                CardText successCard = new CardText("Email is sent" , AdaptiveTextColor.Good);
+                var card = SubmitCard.createCard(user, successCard);
                 //IMessageActivity message = MessageFactory.Attachment(card);
                 var activity = MessageFactory.Attachment(card);
                 activity.Id = turnContext.Activity.ReplyToId;
@@ -127,9 +128,9 @@ namespace Assessment.Bot
             catch (Exception e)
             {
                
-                text.Text = "Email is Not sent, " + e.Message;
-                text.Color = AdaptiveTextColor.Attention;
-                var card = SubmitCard.createCard(user,text);
+               
+                CardText failCard = new CardText("Email is not sent, "+ e.Message, AdaptiveTextColor.Attention);
+                var card = SubmitCard.createCard(user, failCard);
                 //IMessageActivity message = MessageFactory.Attachment(card);
                 var activity = MessageFactory.Attachment(card);
                 activity.Id = turnContext.Activity.ReplyToId;
@@ -147,19 +148,19 @@ namespace Assessment.Bot
         {
             var message = turnContext.Activity;
             MailValidator mailValidator = new MailValidator();
-            DataToSend submitedData = ((JObject)message.Value).ToObject<DataToSend>();
+            MailRequest submitedData = ((JObject)message.Value).ToObject<MailRequest>();
             var user = _signupService.GetUserByAadObjectId(turnContext.Activity.From.AadObjectId);
 
             var oldLogs = _signupService.GetMailLogs();
-            if(oldLogs.Any(a => a.AlternativeEmail == submitedData.email))
+            if(oldLogs.Any(a => a.AlternativeEmail == submitedData.Email))
                 throw new Exception("This user is already in the system");
 
-            if (mailValidator.IsMailValid(submitedData.email))
+            if (mailValidator.IsMailValid(submitedData.Email))
             {
                 _signupService.SendEmail(submitedData, user.FirstName);
                 var mailData = new MailLog();
-                mailData.AlternativeEmail = submitedData.email;
-                mailData.Department = submitedData.dept;
+                mailData.AlternativeEmail = submitedData.Email;
+                mailData.Department = submitedData.Department;
                 mailData.SentAt = DateTime.Now;
                 mailData.UserId = user.Id + "";
                 _signupService.SaveMailLog(mailData);

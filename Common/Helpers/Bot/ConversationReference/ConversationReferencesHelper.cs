@@ -1,11 +1,11 @@
 ﻿
-
 using Common.Helpers.Services;
 using Common.Models.Database;
 using Microsoft.Bot.Schema;
 using Microsoft.Bot.Schema.Teams;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,9 +33,21 @@ namespace Common.Helpers.Bot
             //await DeleteAsync(entity);
         }
 
-        public IEnumerable<ConversationReferenceEntity> GetConversationRefrenceAsync()
+        public ConversationReference GetConversationRefrenceAsync(ConcurrentDictionary<string, ConversationReference> conversationReferences,string currentUserAadObjectId)
         {
-            return _signupService.GetConversationReferences();
+            if (conversationReferences.Count == 0)
+            {
+                conversationReferences = new ConcurrentDictionary<string, ConversationReference>();
+                conversationReferences = GetConversationDectionary();
+            }
+            var conversationList = conversationReferences.Values;
+            var conversation = conversationList.FirstOrDefault(c => c.Conversation.AadObjectId == currentUserAadObjectId);
+            if (conversation == null)
+            {
+                conversation = conversationList.FirstOrDefault();
+                conversation.Conversation.AadObjectId = _signupService.GetReferenceEntity(conversation.Conversation.Id).AadObjectId;
+            }
+            return conversation;
         }
 
         private ConversationReferenceEntity ConvertConversationReferanceForDB(ConversationReference reference, TeamsChannelAccount currentMember)
@@ -56,6 +68,31 @@ namespace Common.Helpers.Bot
                 //PartitionKey = ConversationReferences.PartitionKey
 
             };
+        }
+
+        private ConcurrentDictionary<string, ConversationReference> GetConversationDectionary()
+        {
+            var list = _signupService.GetConversationReferences();
+            var dict = new ConcurrentDictionary<string, ConversationReference>();
+            foreach (var item in list)
+            {
+                ConversationReference cr = new ConversationReference();
+                cr.ActivityId = item.ActivityId;
+                cr.ChannelId = item.ChannelId;
+                ChannelAccount bot = new ChannelAccount();
+                ChannelAccount user = new ChannelAccount();
+                ConversationAccount ca = new ConversationAccount();
+                ca.AadObjectId = item.AadObjectId;
+                user.Id = item.UserId;
+                bot.Id = item.BotId;
+                cr.Bot = bot;
+                cr.User = user;
+                ca.Id = item.ConversationId;
+                cr.Conversation = ca;
+                cr.ServiceUrl = item.ServiceUrl;
+                dict[item.UserId] = cr;
+            }
+            return dict;
         }
     }
 }

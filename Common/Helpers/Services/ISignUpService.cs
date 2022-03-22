@@ -28,7 +28,7 @@ namespace Common.Helpers.Services
         User GetUserByAadObjectId(string id);
         List<MailLog> GetMailLogs();
 
-        void SendEmail(DataToSend data, string name);
+        void SendEmail(MailRequest mailData, string name);
 
     }
 }

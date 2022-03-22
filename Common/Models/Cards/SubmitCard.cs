@@ -1,4 +1,5 @@
 ﻿using AdaptiveCards;
+using Assessment.Common.Models.Request;
 using Common.Models.Database.API;
 using Microsoft.Bot.Schema;
 using Newtonsoft.Json;
@@ -50,7 +51,7 @@ namespace Assessment.Common.Models.Cards
             mailFieldCol.Width = AdaptiveColumnWidth.Auto;
             mailFieldCol.Items.Add(new AdaptiveTextInput()
             {
-                Id = "email",
+                Id = "Email",
                 //Label = "enter email",
                 Type = "Input.Text",
                 Placeholder = "Alternative email address",
@@ -61,7 +62,7 @@ namespace Assessment.Common.Models.Cards
             deptFieldCol.Width = AdaptiveColumnWidth.Auto;
             deptFieldCol.Items.Add(new AdaptiveTextInput()
             {
-                Id = "dept",
+                Id = "Department",
                 //Label = "enter dept",
                 Placeholder = "Department",
                 Type = "Input.Text",
@@ -110,10 +111,10 @@ namespace Assessment.Common.Models.Cards
             {
                 Type = "Action.Submit",
                 Title = "Submit",
-                Data = new DataToSend
+                Data = new MailRequest
                 {
-                    dept = "dept",
-                    email = "email"
+                    Department = "Department",
+                    Email = "Email"
                 }
             }
         };

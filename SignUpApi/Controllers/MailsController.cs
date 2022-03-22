@@ -52,27 +52,17 @@ namespace SignUpApi.Controllers
 
         [Authorize]
         [HttpPost("api/card")]
-        public async Task<IActionResult> PostCardToUser([FromHeader] string authorization)
+        public async Task<IActionResult> PostCardToUser()
         {
-            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+            var currentUserId = (int)_httpContextAccessor.HttpContext.Items["UserId"];
+            var currentUserAadObjectId = (string)_httpContextAccessor.HttpContext.Items["AadObjectId"];
             
-
-            if (_conversationReferences.Count == 0)
-            {
-                _conversationReferences = new ConcurrentDictionary<string, ConversationReference>();
-                _conversationReferences = getConversationDectionary();
-            }
-            var conversationList = _conversationReferences.Values;
-            var conversation = conversationList.FirstOrDefault(c => c.Conversation.AadObjectId == currentUser.AadObjectId);
-            if(conversation == null)
-            {
-                conversation = conversationList.FirstOrDefault();
-                conversation.Conversation.AadObjectId = _signupService.GetReferenceEntity(conversation.Conversation.Id).AadObjectId;
-            }
-            CardText text = new CardText();
-            text.Text = "Enter Email and Department to send registration mail";
-            text.Color = AdaptiveCards.AdaptiveTextColor.Accent;
-            var card = SubmitCard.createCard(currentUser,text);
+            var conversation = _conversationReferenceHelper.GetConversationRefrenceAsync(_conversationReferences , currentUserAadObjectId);           
+            
+            CardText firstCard = new CardText("Enter Email and Department to send registration mail" , AdaptiveCards.AdaptiveTextColor.Accent);
+            
+            var currentUser = _signupService.GetById(currentUserId);
+            var card = SubmitCard.createCard(currentUser, firstCard);
             IMessageActivity message = MessageFactory.Attachment(card);
             await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversation,
                async (context, token) => await BotCallback(message, context, token),
@@ -90,14 +80,16 @@ namespace SignUpApi.Controllers
         [Authorize(Role.Admin)]
         [HttpPost]
         [Route("api/mail")]
-        public IActionResult SendEmail([FromBody] MailRequest mail, [FromHeader] string authorization)
+        public IActionResult SendEmail([FromBody] MailRequest mail)
         {
             
-            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+            var currentUserId = (int)_httpContextAccessor.HttpContext.Items["UserId"];
+            var currentUser = _signupService.GetById(currentUserId);
+
             MailValidator mailValidator = new MailValidator();
-            var dataToSend = new DataToSend();
-            dataToSend.email = mail.Email;
-            dataToSend.dept = mail.Department;
+            var dataToSend = new MailRequest();
+            dataToSend.Email = mail.Email;
+            dataToSend.Department = mail.Department;
             //return Ok(_userService.GetAll().AsQueryable());
             if (mailValidator.IsMailValid(mail.Email))
             {
@@ -140,32 +132,6 @@ namespace SignUpApi.Controllers
             //await turnContext.SendActivityAsync("proactive hello " + message.Text);
             var turnContextResponse = await turnContext.SendActivityAsync(message, cancellationToken);
             _activityId = turnContextResponse.Id;
-        }
-
-        [NonAction]
-        public ConcurrentDictionary<string, ConversationReference> getConversationDectionary()
-        {
-            var list = _conversationReferenceHelper.GetConversationRefrenceAsync();
-            var dict = new ConcurrentDictionary<string, ConversationReference>();
-            foreach (var item in list)
-            {
-                ConversationReference cr = new ConversationReference();
-                cr.ActivityId = item.ActivityId;
-                cr.ChannelId = item.ChannelId;
-                ChannelAccount bot = new ChannelAccount();
-                ChannelAccount user = new ChannelAccount();
-                ConversationAccount ca = new ConversationAccount();
-                ca.AadObjectId = item.AadObjectId;
-                user.Id = item.UserId;
-                bot.Id = item.BotId;
-                cr.Bot = bot;
-                cr.User = user;
-                ca.Id = item.ConversationId;
-                cr.Conversation = ca;
-                cr.ServiceUrl = item.ServiceUrl;
-                dict[item.UserId] = cr;
-            }
-            return dict;
         }
 
         

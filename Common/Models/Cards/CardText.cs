@@ -11,5 +11,11 @@ namespace Assessment.Common.Models.Cards
     {
         public string Text { get; set; }
         public AdaptiveTextColor Color { get; set; }
+
+        public CardText(string text , AdaptiveTextColor color)
+        {
+            Text = text;
+            Color = color;
+        }
     }
 }

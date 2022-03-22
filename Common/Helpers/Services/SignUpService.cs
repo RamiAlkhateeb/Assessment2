@@ -119,13 +119,13 @@ namespace Common.Helpers.Services
         }
 
 
-        public void SendEmail(DataToSend data, string name)
+        public void SendEmail(MailRequest mailData, string name)
         {
-            string to = data.email; //To address    
+            string to = mailData.Email; //To address    
             string from = _configuration["SmtpSettings:SenderEmail"]; //From address
             MailMessage mail = new MailMessage(from, to);
-            var receiver = String.IsNullOrEmpty(name) ? GetEmailName(data.email) : name;
-            mail.Body = "Hi " + receiver + " from " + data.dept + ". Thank you for signing up!” ";
+            var receiver = String.IsNullOrEmpty(name) ? GetEmailName(to) : name;
+            mail.Body = "Hi " + receiver + " from " + mailData.Department + ". Thank you for signing up!” ";
             mail.Subject = "Email from the Bot";
 
 
@@ -136,7 +136,7 @@ namespace Common.Helpers.Services
             client.DeliveryMethod = SmtpDeliveryMethod.Network;
             client.EnableSsl = true;
 
-            if (data.email != null)
+            if (mailData.Email != null)
                 try
                 {
                     //client.Send(mail);
