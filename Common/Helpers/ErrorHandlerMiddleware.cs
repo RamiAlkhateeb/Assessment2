@@ -36,6 +36,7 @@ namespace Assessment.Common.Helpers
                 {
                     case AppException e:
                         // custom application error
+                        _logger.LogError(error, error.Message);
                         response.StatusCode = (int)HttpStatusCode.BadRequest;
                         break;
                     case KeyNotFoundException e:

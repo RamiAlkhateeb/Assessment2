@@ -23,6 +23,7 @@ using System.Text.Json.Serialization;
 using Assessment.Common.Helpers;
 using Common.Authorization;
 using Assessment.Common.Configurations;
+using Microsoft.Extensions.Logging;
 
 namespace SignUpApi
 {
@@ -40,8 +41,11 @@ namespace SignUpApi
         {
 
             services.AddCors();
-
+            services.AddLogging();
+            services.AddApplicationInsightsTelemetry();
             //services.AddControllers();
+            services.AddSingleton(sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger("DefaultLogger"));
+
             services.AddControllersWithViews();
             services.AddMicrosoftIdentityWebAppAuthentication(Configuration)
                 .EnableTokenAcquisitionToCallDownstreamApi()
@@ -82,19 +86,7 @@ namespace SignUpApi
                     Type = SecuritySchemeType.Http,
                     Scheme = "bearer"
                 });
-            //    c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-            //{
-            //    new OpenApiSecurityScheme
-            //    {
-            //        Reference = new OpenApiReference
-            //        {
-            //            Type = ReferenceType.SecurityScheme,
-            //            Id = "Bearer"
-            //        }
-            //    },
-            //    new string[] { }
-            //}
-            //});
+            
             });
 
             //services.AddAutoMapper();
@@ -139,6 +131,7 @@ namespace SignUpApi
 
             // custom jwt auth middleware
             app.UseMiddleware<JwtMiddleware>();
+
             app.UseHttpsRedirection();
 
             app.UseRouting();
@@ -150,7 +143,6 @@ namespace SignUpApi
 
             app.UseAuthorization();
             app.UseAuthentication();
-            app.UseMiddleware<ErrorHandlerMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

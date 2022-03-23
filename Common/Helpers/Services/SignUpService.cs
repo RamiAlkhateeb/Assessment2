@@ -19,6 +19,7 @@ using Assessment.Common.Models.Database;
 using Assessment.Common.Models;
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Common.Helpers.Services
 {
@@ -71,7 +72,13 @@ namespace Common.Helpers.Services
             else
             {
                 _context.conversationReferenceEntities.Add(cr);
+                //_context.SaveChanges();
+
+                var user = _context.Users.FirstOrDefault(u => u.Email == cr.UPN);
+                user.AadObjectId = cr.AadObjectId;
+                _context.Update(user);
                 _context.SaveChanges();
+
                 return cr;
             }
 
@@ -98,7 +105,15 @@ namespace Common.Helpers.Services
 
         public List<MailLog> GetMailLogs()
         {
-            return _context.MailLogs.ToList();
+            try
+            {
+
+                return _context.MailLogs.ToList();
+
+            }catch(Exception e)
+            {
+                throw new AppException("Operation failed, " + e.Message);
+            }
         }
 
         public MailLog SaveMailLog(MailLog mailLog)
@@ -140,6 +155,7 @@ namespace Common.Helpers.Services
                 try
                 {
                     //client.Send(mail);
+                
 
                 }
                 catch (Exception e)

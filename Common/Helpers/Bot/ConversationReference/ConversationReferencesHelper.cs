@@ -27,10 +27,10 @@ namespace Common.Helpers.Bot
             _signupService.SaveConversationReference(entity);
         }
 
-        public async Task DeleteConversationRefrenceAsync(ConversationReference reference, TeamsChannelAccount member)
+        public ConversationReferenceEntity DeleteConversationRefrenceAsync(ConversationReference reference, TeamsChannelAccount member)
         {
             var entity = ConvertConversationReferanceForDB(reference, member);
-            //await DeleteAsync(entity);
+            return entity;
         }
 
         public ConversationReference GetConversationRefrenceAsync(ConcurrentDictionary<string, ConversationReference> conversationReferences,string currentUserAadObjectId)

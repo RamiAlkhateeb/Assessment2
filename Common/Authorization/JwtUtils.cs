@@ -32,6 +32,8 @@ namespace Common.Authorization
             // generate token that is valid for 7 days
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+            if (String.IsNullOrEmpty(user.AadObjectId))
+                user.AadObjectId = "";
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("id", user.Id.ToString()) , 

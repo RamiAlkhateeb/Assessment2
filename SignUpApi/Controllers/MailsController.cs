@@ -13,6 +13,7 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -32,12 +33,14 @@ namespace SignUpApi.Controllers
         private readonly ISignUpService _signupService;
         private string _activityId;
         private IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger _logger;
 
         public MailsController(IConversationReferencesHelper conversationReferencesHelper,
             IBotFrameworkHttpAdapter adapter,
             IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences,
             ISignUpService signupService,
-            IHttpContextAccessor httpContextAccessor
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<MailsController> logger
             )
         {
             _adapter = adapter;
@@ -46,7 +49,7 @@ namespace SignUpApi.Controllers
             _appId = configuration["MicrosoftAppId"] ?? string.Empty;
             _signupService = signupService;
             _httpContextAccessor = httpContextAccessor;
-
+            _logger = logger;
         }
 
 
@@ -95,6 +98,10 @@ namespace SignUpApi.Controllers
             {
                 try
                 {
+                    string log = "Mail sent from: " + currentUser.Email + " to " + dataToSend.Email
+           + " with department: " + dataToSend.Department;
+                    _logger.LogInformation(log );
+                  
                     _signupService.SendEmail(dataToSend,currentUser.FirstName);
                     var mailData = new MailLog();
                     mailData.AlternativeEmail = mail.Email;
@@ -104,6 +111,8 @@ namespace SignUpApi.Controllers
 
                     // mailData.UserId = turnContext.Activity.Conversation.AadObjectId;
                     _signupService.SaveMailLog(mailData);
+
+
                 }
                 catch (Exception e)
                 {
@@ -123,6 +132,10 @@ namespace SignUpApi.Controllers
         [Route("api/mails")]
         public IActionResult GetMails()
         {
+            _logger.LogInformation("Mail informaetion Logs returned");
+            
+
+
             return Ok(_signupService.GetMailLogs());
         }
 

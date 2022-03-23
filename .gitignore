@@ -39,6 +39,10 @@ bld/
 #wwwroot/
 
 SignUpApi/appsettings.json
+SignUpApi/.config
+SignUpApi/Properties/ServiceDependencies
+SignUpApi/Properties/serviceDependencies.json
+SignUpApi/Properties/serviceDependencies.SignupAppBot - Web Deploy.json
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/

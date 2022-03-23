@@ -28,11 +28,11 @@ namespace Assessment.Bot
     public class Bot : ActivityHandler
     {
         // Messages sent to the user.
-        private const string WelcomeMessage = "Welcom";
+        private const string WelcomeMessage = "Welcome";
 
 
-        private const string PatternMessage = " the bot " +
-                                              "handles 'hello', 'hi', 'help' and 'intro'. Try it now, type 'hi'";
+        //private const string PatternMessage = " the bot " +
+        //                                      "handles 'hello', 'hi', 'help' and 'intro'. Try it now, type 'hi'";
 
         //private readonly string[] _cards = { ".//Resources//DoctorCard.json" };
         private readonly IConversationReferencesHelper _conversationReferenceHelper;
@@ -67,7 +67,7 @@ namespace Assessment.Bot
                 _conversationReferenceHelper.AddorUpdateConversationRefrenceAsync(botConRef, currentMember);
             else if (activity.Action.Equals("remove"))
                 //var createUser = _signupService.SaveUserToAD(currentMember);
-                _conversationReferenceHelper.AddorUpdateConversationRefrenceAsync(botConRef, currentMember);
+                _conversationReferenceHelper.DeleteConversationRefrenceAsync(botConRef, currentMember);
 
 
         }
@@ -99,7 +99,7 @@ namespace Assessment.Bot
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
                     await turnContext.SendActivityAsync($"Hi there - {member.Name}. {WelcomeMessage}", cancellationToken: cancellationToken);
-                    await turnContext.SendActivityAsync(PatternMessage, cancellationToken: cancellationToken);
+                    //await turnContext.SendActivityAsync(PatternMessage, cancellationToken: cancellationToken);
                 }
             }
         }
